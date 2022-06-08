@@ -17,7 +17,7 @@ class Images:
 
     @staticmethod
     def select_picture():
-        ind = random.randrange(0, len(Images.available))
+        ind = random.randrange(0, len(Images.available) // 2) * 2
         ability = Images.available[ind]
         Images.available.pop(ind)
 
@@ -55,7 +55,6 @@ def decode(ability):
     else:
         champ_name = ability.split("_")[0]
         if "%27" in champ_name:
-            # FIXME add acceptable answers without '
             champ_name = champ_name.replace("%27", "'")
 
         ability = " ".join(ability.split("_")[1:])
@@ -69,16 +68,26 @@ def decode(ability):
 
 
 def check_answer(answer, champ_name, ability, ability_id):
-    # TODO
-    # add acceptable answer like ult and ultimate for r and pass and passive for p (maybe also 1,2,3,4)
-    # Make a dict of acceptable answers with "correct" ability as key and list of all valid answers as value
-    # Also add to make sure q w e r works. is in ability name ust need to change decode method maybe
+    print("Answer gets checked!")
+    acceptable_answers = {
+        "p": ["pass", "passive", "pas"],
+        "r": ["ult", "ulti", "ultimate"]
+    }
     # TODO Add a boolean for if only name and add to if statements. To get bonus point only if you know the whole name
     try:
         if answer.lower() == ability.lower() or ability.lower() in answer.lower():
             return True
+        if len(answer.split()) < len(champ_name.split()) + len(ability_id):
+            return False
 
-        # Add acceptable answer for qwer instead of only name
+        if "'" in champ_name:
+            # If answer of ' champ is given with space instead of '
+            if " ".join(champ_name.split("'")).lower() in answer.lower() and (ability_id.lower() == answer.split()[0].lower() or ability_id.lower() == answer.split()[-1].lower()):
+                return True
+
+            # If answer of ' champ is given with nothing instead of '
+            if "".join(champ_name.split("'")).lower() in answer.lower() and (ability_id.lower() == answer.split()[0].lower() or ability_id.lower() == answer.split()[-1].lower()):
+                return True
 
         # If guess is on form champ id or id champ and champ name is without space
         if len(answer.split()) == 2 and len(champ_name.split()) == 1:
@@ -88,15 +97,15 @@ def check_answer(answer, champ_name, ability, ability_id):
                 return True
 
             # Add acceptable answers for passive
-            if ability_id.lower() == "p" and answer.split()[0].lower() == ("pass" or "passive") and answer.split()[1].lower() == champ_name.lower():
+            if ability_id.lower() == "p" and answer.split()[0].lower() in acceptable_answers.get(ability_id.lower()) and answer.split()[1].lower() == champ_name.lower():
                 return True
-            if ability_id.lower() == "p" and answer.split()[1].lower() == ("pass" or "passive") and answer.split()[0].lower() == champ_name.lower():
+            if ability_id.lower() == "p" and answer.split()[1].lower() in acceptable_answers.get(ability_id.lower()) and answer.split()[0].lower() == champ_name.lower():
                 return True
 
             # Add acceptable answers for R
-            if ability_id.lower() == "r" and answer.split()[1].lower() == ("ult" or "ulti" or "ultimate") and answer.split()[0].lower() == champ_name.lower():
+            if ability_id.lower() == "r" and answer.split()[1].lower() in acceptable_answers.get(ability_id.lower()) and answer.split()[0].lower() == champ_name.lower():
                 return True
-            if ability_id.lower() == "r" and answer.split()[0].lower() == ("ult" or "ulti" or "ultimate") and answer.split()[1].lower() == champ_name.lower():
+            if ability_id.lower() == "r" and answer.split()[0].lower() in acceptable_answers.get(ability_id.lower()) and answer.split()[1].lower() == champ_name.lower():
                 return True
 
         # If guess is on form champ id or id champ and champ name is with space
@@ -107,22 +116,21 @@ def check_answer(answer, champ_name, ability, ability_id):
                 return True
 
             # Add acceptable answers for passive
-            # TODO fix so it work with this stuff like above too
-            if ability_id.lower() == "p" and answer.split()[0].lower() == ("pass" or "passive") and answer.split()[1].lower() == champ_name.lower():
+            if ability_id.lower() == "p" and answer.split()[0].lower() in acceptable_answers.get(ability_id.lower()) and " ".join(answer.split()[1:]).lower() == champ_name.lower():
                 return True
-            if ability_id.lower() == "p" and answer.split()[1].lower() == ("pass" or "passive") and answer.split()[0].lower() == champ_name.lower():
+            if ability_id.lower() == "p" and answer.split()[-1].lower() in acceptable_answers.get(ability_id.lower()) and " ".join(answer.split()[:2]).lower() == champ_name.lower():
                 return True
 
             # Add acceptable answers for R
-            if ability_id.lower() == "r" and answer.split()[1].lower() == ("ult" or "ulti" or "ultimate") and answer.split()[
-                0].lower() == champ_name.lower():
+            if ability_id.lower() == "r" and answer.split()[-1].lower() in acceptable_answers.get(ability_id.lower()) and " ".join(answer.split()[:2]).lower() == champ_name.lower():
                 return True
-            if ability_id.lower() == "r" and answer.split()[0].lower() == ("ult" or "ulti" or "ultimate") and answer.split()[
-                1].lower() == champ_name.lower():
+            if ability_id.lower() == "r" and answer.split()[0].lower() in acceptable_answers.get(ability_id.lower()) and " ".join(answer.split()[1:]).lower() == champ_name.lower():
                 return True
+        return False
 
-    except IndexError:
-        print(answer, "Error")
+    except Exception as e:
+        print(answer, "Error", e)
+        return False
 
 @client.event
 async def on_ready():
@@ -131,19 +139,20 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    print(f"Received message, \"{message.content}\"")
-    # FIXME Find a better solution for reference before assignment
+    #print(f"Received message, \"{message.content}\"")
+    # TODO Find a better solution for reference before assignment
 
     if message.author == client.user:
-       # print("Yup thats myself", message.content)
+        # print("Yup thats myself", message.content)
         return
 
     valid_guess = True
 
-    if message.content.startswith('$ability-quiz'):
+    if message.content.startswith('$quiz'):
         Images.answered = False
         Images.checked = False
         Images.result = False
+        Images.correct = False
         img = Images.select_picture()
         Images.champ, Images.ability, Images.ability_id = decode(img)
 
@@ -155,20 +164,24 @@ async def on_message(message):
 
     try:
         Images.guess = await client.wait_for("message", check=check, timeout=10.0)
-        if Images.guess.content == "$ability-quiz":
+        if Images.guess.content == "$quiz":
             valid_guess = False
         if len(Images.guess.content) > 0:
             Images.answered = True
 
-    # FIXME Make sure it only returns this if there hasnt been an answer
+    # TODO Make sure it only returns this if there hasnt been an answer
     except asyncio.TimeoutError:
-        #print(f"Timeout, answered?: {Images.answered}")
+        # print(f"Timeout, answered?: {Images.answered}")
         if not Images.answered and Images.ability != "Empty":
             Images.guess = None
             return await message.channel.send(f"Sorry you took too long, answer was {Images.ability} ({Images.champ} {Images.ability_id.upper()})")
 
-    if Images.guess is not None and valid_guess:
+    if Images.guess.content is not None and valid_guess:
+        print(Images.guess.content)
+        print(Images.result, Images.ability)
+        print(Images.correct)
         if check_answer(Images.guess.content, Images.champ, Images.ability, Images.ability_id) and not Images.result:
+            print("Correct answer!")
             await message.channel.send("Correct!")
             Images.correct = True
             Images.result = True
