@@ -135,11 +135,8 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    #print(f"Received message, \"{message.content}\"")
-    # TODO Find a better solution for reference before assignment
 
     if message.author == client.user:
-        # print("Yup thats myself", message.content)
         return
 
     # Start of quiz
@@ -172,7 +169,6 @@ async def on_message(message):
             try:
                 Images.guess = await client.wait_for("message", check=check, timeout=time_per_guess)
                 start = time.time()
-            # TODO Make sure it only returns this if there hasnt been an answer
             except asyncio.TimeoutError:
                 # print(f"Timeout, answered?: {Images.answered}")
                 await message.channel.send(f"Sorry you took too long, answer was {ability} ({champ} {ability_id.upper()})")
