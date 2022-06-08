@@ -141,8 +141,10 @@ async def on_message(message):
         # print("Yup thats myself", message.content)
         return
 
+    # Start of quiz
     if message.content.startswith('$quiz'):
-        questions = 3
+        leaderboard = {}
+        questions = 5
         for i in range(questions):
             img = Images.select_picture()
             champ, ability, ability_id = decode(img)
@@ -150,10 +152,14 @@ async def on_message(message):
             # TODO Maybe fix resize images
 
             direc = f"./Ability_images/{img}"
-            e = discord.Embed(title=f"Question number {i + 1} of {questions}", description="This is test description")
-            print(img)
-            e.set_image(url=f"attachment://{''.join(img.split('%'))}")
-            print(e.image)
+            if len(leaderboard.keys()) > 0:
+                # TODO fix and sort for more players
+                first = list(leaderboard.items())[0]
+                e = discord.Embed(title=f"Question number {i + 1} of {questions}", description=f"{first[0]} - {first[1]} pts")
+            else:
+                e = discord.Embed(title=f"Question number {i + 1} of {questions}", description="Guess the ability. Either name of ability or champion and what ability (p, q, w, e, r)")
+
+            e.set_thumbnail(url=f"attachment://{''.join(img.split('%'))}")
             file = discord.File(direc, filename=img)
             await message.channel.send(embed=e, file=file)
 
@@ -170,9 +176,18 @@ async def on_message(message):
                 continue
 
             if check_answer(Images.guess.content, champ, ability, ability_id):
-                await message.channel.send("Correct!")
+                if Images.guess.author.mention in leaderboard:
+                    leaderboard[Images.guess.author.mention] += 1
+                else:
+                    leaderboard[Images.guess.author.mention] = 1
+                await message.channel.send(f"Correct! {Images.guess.author.mention}")
             else:
                 await message.channel.send(f"Not quite right, dummy. Answer was {ability} ({champ} {ability_id.upper()})")
+        e = discord.Embed(title=f"Game finished! Results:", description=f"{first[0]} - {first[1]} pts")
+        await message.channel.send(embed=e)
+
     return
 
-client.run('OTgwMjEwMzE0OTcwODA0MjM0.GtfPd6.42R2Uud802J6gsh0DxSztzDRKoHhWvCZaE8QCA')
+with open("code.txt", "r") as f:
+    code = f.readline()
+client.run(code)
