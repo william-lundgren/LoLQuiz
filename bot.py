@@ -3,6 +3,7 @@ import discord
 import os
 import random
 from PIL import Image
+import time
 
 client = discord.Client()
 
@@ -145,6 +146,8 @@ async def on_message(message):
     if message.content.startswith('$quiz'):
         leaderboard = {}
         questions = 5
+        time_per_guess = 10.0
+
         for i in range(questions):
             img = Images.select_picture()
             champ, ability, ability_id = decode(img)
@@ -167,22 +170,32 @@ async def on_message(message):
                 return m.author == message.author
 
             try:
-                Images.guess = await client.wait_for("message", check=check, timeout=5.0)
-
+                Images.guess = await client.wait_for("message", check=check, timeout=time_per_guess)
+                start = time.time()
             # TODO Make sure it only returns this if there hasnt been an answer
             except asyncio.TimeoutError:
                 # print(f"Timeout, answered?: {Images.answered}")
                 await message.channel.send(f"Sorry you took too long, answer was {ability} ({champ} {ability_id.upper()})")
                 continue
 
-            if check_answer(Images.guess.content, champ, ability, ability_id):
-                if Images.guess.author.mention in leaderboard:
-                    leaderboard[Images.guess.author.mention] += 1
+            while True:
+                if check_answer(Images.guess.content, champ, ability, ability_id):
+                    if Images.guess.author.mention in leaderboard:
+                        leaderboard[Images.guess.author.mention] += 1
+                    else:
+                        leaderboard[Images.guess.author.mention] = 1
+                    await message.channel.send(f"Correct! {Images.guess.author.mention}")
+                    break
                 else:
-                    leaderboard[Images.guess.author.mention] = 1
-                await message.channel.send(f"Correct! {Images.guess.author.mention}")
-            else:
-                await message.channel.send(f"Not quite right, dummy. Answer was {ability} ({champ} {ability_id.upper()})")
+                    # TODO change to reaction instead
+                    await message.channel.send(f"Not quite right, dummy.")
+
+                    try:
+                        Images.guess = await client.wait_for("message", check=check, timeout=time_per_guess - (time.time()-start))
+                    except asyncio.TimeoutError:
+                        await message.channel.send(f"Sorry you took too long, answer was {ability} ({champ} {ability_id.upper()})")
+                        break
+
         e = discord.Embed(title=f"Game finished! Results:", description=f"{first[0]} - {first[1]} pts")
         await message.channel.send(embed=e)
 
