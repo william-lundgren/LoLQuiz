@@ -126,6 +126,7 @@ def check_answer(answer, champ_name, ability, ability_id):
         print(answer, "Error", e)
         return False
 
+
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
@@ -141,12 +142,20 @@ async def on_message(message):
         return
 
     if message.content.startswith('$quiz'):
-        for i in range(3):
+        questions = 3
+        for i in range(questions):
             img = Images.select_picture()
             champ, ability, ability_id = decode(img)
 
             # TODO Maybe fix resize images
-            await message.channel.send(file=discord.File(f"./Ability_images/{img}"))
+
+            direc = f"./Ability_images/{img}"
+            e = discord.Embed(title=f"Question number {i + 1} of {questions}", description="This is test description")
+            print(img)
+            e.set_image(url=f"attachment://{''.join(img.split('%'))}")
+            print(e.image)
+            file = discord.File(direc, filename=img)
+            await message.channel.send(embed=e, file=file)
 
             def check(m):
                 return m.author == message.author
