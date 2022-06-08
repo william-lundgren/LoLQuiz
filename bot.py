@@ -9,11 +9,6 @@ client = discord.Client()
 
 class Images:
     available = os.listdir('./Ability_images')
-    answered = False
-    guess = None
-    correct = False
-    champ, ability, ability_id = "Empty", "Empty", "Empty"
-    result = False
 
     @staticmethod
     def select_picture():
@@ -68,7 +63,6 @@ def decode(ability):
 
 
 def check_answer(answer, champ_name, ability, ability_id):
-    print("Answer gets checked!")
     acceptable_answers = {
         "p": ["pass", "passive", "pas"],
         "r": ["ult", "ulti", "ultimate"]
@@ -146,48 +140,30 @@ async def on_message(message):
         # print("Yup thats myself", message.content)
         return
 
-    valid_guess = True
-
     if message.content.startswith('$quiz'):
-        Images.answered = False
-        Images.checked = False
-        Images.result = False
-        Images.correct = False
-        img = Images.select_picture()
-        Images.champ, Images.ability, Images.ability_id = decode(img)
+        for i in range(3):
+            img = Images.select_picture()
+            champ, ability, ability_id = decode(img)
 
-        # TODO Maybe fix resize images
-        await message.channel.send(file=discord.File(f"./Ability_images/{img}"))
+            # TODO Maybe fix resize images
+            await message.channel.send(file=discord.File(f"./Ability_images/{img}"))
 
-    def check(m):
-        return m.author == message.author
+            def check(m):
+                return m.author == message.author
 
-    try:
-        Images.guess = await client.wait_for("message", check=check, timeout=10.0)
-        if Images.guess.content == "$quiz":
-            valid_guess = False
-        if len(Images.guess.content) > 0:
-            Images.answered = True
+            try:
+                Images.guess = await client.wait_for("message", check=check, timeout=5.0)
 
-    # TODO Make sure it only returns this if there hasnt been an answer
-    except asyncio.TimeoutError:
-        # print(f"Timeout, answered?: {Images.answered}")
-        if not Images.answered and Images.ability != "Empty":
-            Images.guess = None
-            return await message.channel.send(f"Sorry you took too long, answer was {Images.ability} ({Images.champ} {Images.ability_id.upper()})")
+            # TODO Make sure it only returns this if there hasnt been an answer
+            except asyncio.TimeoutError:
+                # print(f"Timeout, answered?: {Images.answered}")
+                await message.channel.send(f"Sorry you took too long, answer was {ability} ({champ} {ability_id.upper()})")
+                continue
 
-    if Images.guess.content is not None and valid_guess:
-        print(Images.guess.content)
-        print(Images.result, Images.ability)
-        print(Images.correct)
-        if check_answer(Images.guess.content, Images.champ, Images.ability, Images.ability_id) and not Images.result:
-            print("Correct answer!")
-            await message.channel.send("Correct!")
-            Images.correct = True
-            Images.result = True
-        elif not Images.correct and Images.ability != "Empty" and not Images.result:
-            Images.result = True
-            await message.channel.send(f"Not quite right, dummy. Answer was {Images.ability} ({Images.champ} {Images.ability_id.upper()})")
-
+            if check_answer(Images.guess.content, champ, ability, ability_id):
+                await message.channel.send("Correct!")
+            else:
+                await message.channel.send(f"Not quite right, dummy. Answer was {ability} ({champ} {ability_id.upper()})")
+    return
 
 client.run('OTgwMjEwMzE0OTcwODA0MjM0.GtfPd6.42R2Uud802J6gsh0DxSztzDRKoHhWvCZaE8QCA')
