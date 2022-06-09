@@ -128,6 +128,35 @@ def check_answer(answer, champ_name, ability, ability_id):
         return False
 
 
+def find_leaderboard_top(player_scores, n):
+    top_n = []
+    for key in player_scores.keys():
+        broken = False
+        if len(top_n) == 0:
+            top_n.append(key)
+        else:
+            for i, ele in enumerate(top_n):
+                if player_scores.get(key) > player_scores.get(ele):
+                    top_n.insert(i, key)
+                    broken = True
+                    break
+            if not broken:
+                top_n.append(key)
+
+    string = ""
+
+    for i, ele in enumerate(top_n[:n]):
+        if i == 0:
+            string += f":first_place: - {ele} - {player_scores.get(ele)} pts\n"
+        elif i == 1:
+            string += f":second_place: - {ele} - {player_scores.get(ele)} pts\n"
+        elif i == 2:
+            string += f":third_place: - {ele} - {player_scores.get(ele)} pts\n"
+        else:
+            string += f"{i + 1} - {ele} - {player_scores.get(ele)} pts\n"
+    return string
+
+
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
@@ -135,7 +164,6 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-
     if message.author == client.user:
         return
 
@@ -154,8 +182,8 @@ async def on_message(message):
             direc = f"./Ability_images/{img}"
             if len(leaderboard.keys()) > 0:
                 # TODO fix and sort for more players
-                first = list(leaderboard.items())[0]
-                e = discord.Embed(title=f"Question number {i + 1} of {questions}", description=f"{first[0]} - {first[1]} pts")
+
+                e = discord.Embed(title=f"Question number {i + 1} of {questions}", description=f"__**Leaderboard:**__\n {find_leaderboard_top(leaderboard, 2)}")
             else:
                 e = discord.Embed(title=f"Question number {i + 1} of {questions}", description="Guess the ability. Either name of ability or champion and what ability (p, q, w, e, r)")
 
@@ -164,7 +192,7 @@ async def on_message(message):
             await message.channel.send(embed=e, file=file)
 
             def check(m):
-                return m.author == message.author
+                return m.author != client.user
 
             try:
                 Images.guess = await client.wait_for("message", check=check, timeout=time_per_guess)
@@ -192,7 +220,7 @@ async def on_message(message):
                         await message.channel.send(f"Sorry you took too long, answer was {ability} ({champ} {ability_id.upper()})")
                         break
 
-        e = discord.Embed(title=f"Game finished! Results:", description=f"{first[0]} - {first[1]} pts")
+        e = discord.Embed(title=f"Game finished! Results:", description=f"__**Leaderboard:**__\n {find_leaderboard_top(leaderboard, 2)}")
         await message.channel.send(embed=e)
 
     return
