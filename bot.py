@@ -16,7 +16,6 @@ class Images:
         ind = random.randrange(0, len(Images.available) // 2) * 2
         ability = Images.available[ind]
         Images.available.pop(ind)
-
         return ability
 
 
@@ -171,7 +170,7 @@ async def on_message(message):
     if message.content.startswith('$quiz'):
         leaderboard = {}
         questions = 5
-        time_per_guess = 10.0
+        time_per_guess = 15.0
 
         for i in range(questions):
             img = Images.select_picture()
